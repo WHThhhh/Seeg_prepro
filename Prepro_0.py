@@ -49,7 +49,7 @@ def detect_bad_channel(sig, max_bad_channels=10, max_iters=5):
     return bad_channels_ind, good_chan_ind
 
 
-path = './'
+path = './data/'
 # /lustre/grp/gjhlab/lvbj/lyz_grp/wht/Three_coupling_prepro/
 # E:/BaiduNetdiskDownload/sub-songxingjiu/
 Files = glob.glob(path + '/*.set')

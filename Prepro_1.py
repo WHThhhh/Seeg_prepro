@@ -12,8 +12,8 @@ def bandpass_wht(sig, lf, hf, fs):
 
 
 def moving_window_rms_wht(sig, window):
-    sig = torch.tensor(np.power(sig, 2), dtype=torch.float32).unsqueeze(1).to('cuda')
-    weight = (torch.ones([1, 1, window]) / float(window)).to('cuda')
+    sig = torch.tensor(np.power(sig, 2), dtype=torch.float32).unsqueeze(1).to('cpu')
+    weight = (torch.ones([1, 1, window]) / torch.tensor(window, dtype=torch.float32)).to('cpu')
     return F.conv1d(sig, weight).to('cpu')
 
 
@@ -72,7 +72,7 @@ def SO_epochs_save(sig, is_eeg, name):
     SO_ = bandpass_wht(sig, 0.16, 1.25, Fs)
     SO_ind = find_SO(SO_, is_eeg)
     SO_epochs = Epochs_wht(SO_ind, sig, 750)
-    np.savez('./Result/' + file_name[-2] + '_' + name + '_SO.npz', SO_ind=SO_ind, SO_epochs=SO_epochs)
+    np.savez('./Result/' + file_name[-2:] + '_' + name + '_SO.npz', SO_ind=SO_ind, SO_epochs=SO_epochs)
 
 
 def Spindle_epochs_save(sig, name):
@@ -81,8 +81,8 @@ def Spindle_epochs_save(sig, name):
     Spindle_threshold = torch.quantile(Spindle_rms, 0.80, dim=2).unsqueeze(1)
     Spindle_label_ori = (Spindle_rms >= Spindle_threshold).float().squeeze()
     Spindle_peak = find_len(Spindle_label_ori, 250, 1500, Spindle_, 100)
-    Spindle_epochs = Epochs_wht(Spindle_peak, hippo_data, 750)
-    np.savez('./Result/' + file_name[-2] + '_' + name + '_Spindle.npz', Spindle_ind=Spindle_peak,
+    Spindle_epochs = Epochs_wht(Spindle_peak, sig, 750)
+    np.savez('./Result/' + file_name[-2:] + '_' + name + '_Spindle.npz', Spindle_ind=Spindle_peak,
              Spindle_epochs=Spindle_epochs)
 
 
@@ -93,7 +93,7 @@ def Ripple_epochs_save(sig, name):
     Ripple_label_ori = (Ripple_rms >= Ripple_threshold).float().squeeze()
     Ripple_peak = find_len(Ripple_label_ori, 19, 1e10, Ripple_, 10)
     Ripple_epochs = Epochs_wht(Ripple_peak, sig, 750)
-    np.savez('./Result/' + file_name[-2] + '_' + name + '_Spindle.npz', Ripple_ind=Ripple_peak,
+    np.savez('./Result/' + file_name[-2:] + '_' + name + '_Ripple.npz', Ripple_ind=Ripple_peak,
              Ripple_epochs=Ripple_epochs)
 
 
