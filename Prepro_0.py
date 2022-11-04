@@ -1,0 +1,111 @@
+import scipy
+import glob
+import mne
+import numpy as np
+import pandas as pd
+from GESD_wht import gesd
+
+
+def hamming_fir_filter(sig, f_order, cutoff_, fs, mode='bandstop'):
+    window = scipy.signal.firwin(f_order, cutoff=cutoff_, window='hamming', pass_zero=mode, fs=fs)
+    filtered_sig = scipy.signal.filtfilt(window, 1, sig)
+    return filtered_sig
+
+
+def is_seeg_chan(chan_):
+    Capital_alpha = list(range(65, 91))
+    chan_label = np.zeros(len(chan_))
+    for i, x in enumerate(chan_):
+        chan_label[i] = 1 if (ord(x[0]) in Capital_alpha and x[1:].isdigit() and len(x) == 3) else 0
+    seeg_chan = np.where(chan_label == 1)[0]
+    eeg_chan = np.where(chan_label == 0)[0]
+    return seeg_chan, eeg_chan
+
+
+def detect_bad_channel(sig, max_bad_channels=10, max_iters=5):
+    chan_ind = list(range(sig.shape[0]))
+    detect_bad = True
+    iters = 0
+    bad_channels_ind = []
+    good_chan_ind = chan_ind
+    while detect_bad and iters < max_iters:
+        iters += 1
+        good_chan_dat = sig[good_chan_ind, :]
+        if len(good_chan_ind) > 1 and len(bad_channels_ind) < max_bad_channels:
+            if len(good_chan_dat.shape) == 3:
+                dat = np.reshape(good_chan_dat,
+                                 [good_chan_dat.shape[0], good_chan_dat.shape[1] * good_chan_dat.shape[2]])
+            else:
+                dat = good_chan_dat
+            std_chan = np.std(dat, axis=1)
+            idx, x2 = gesd(std_chan, alpha=0.05, n_out=max_bad_channels - len(bad_channels_ind), outlier_side=0)
+            to_add = [n for n, a in enumerate(idx) if a]
+            for c in to_add:
+                bad_channels_ind.append(good_chan_ind[c])
+            detect_bad = True if to_add else False
+        else:
+            detect_bad = False
+        good_chan_ind = [ind for ind in chan_ind if ind not in bad_channels_ind]
+    return bad_channels_ind, good_chan_ind
+
+
+path = './'
+# /lustre/grp/gjhlab/lvbj/lyz_grp/wht/Three_coupling_prepro/
+# E:/BaiduNetdiskDownload/sub-songxingjiu/
+Files = glob.glob(path + '/*.set')
+chan_loc_files = glob.glob(path + '/*.tsv')
+cutoff = [49, 51, 99, 101, 149, 151, 199, 201, 249, 251]
+forder = 1689
+for file in Files:
+    file_name = file.split("-")
+    sub_name = file_name[-3].split("_")[0]
+    Data = mne.io.read_raw_eeglab(file, preload=True)
+    data = Data._data
+    chan = Data.ch_names
+    Fs = 512
+    seeg_chan_ind, eeg_chan_ind = is_seeg_chan(chan)
+    seeg_data = data[seeg_chan_ind, :]
+    eeg_data = data[eeg_chan_ind, :]
+
+    del Data, data
+
+    # eeg_rereference
+    mean_eeg = np.mean(eeg_data, axis=0)
+    eeg_data -= mean_eeg
+    eeg_data = hamming_fir_filter(eeg_data, forder, [0.1, 30], Fs, 'bandpass')
+    # remove seeg bad channels
+    bad_chan_ind, good_chan_ind = detect_bad_channel(seeg_data - np.mean(seeg_data, axis=0))
+    if bad_chan_ind:
+        seeg_data_good = seeg_data[good_chan_ind, :]
+        chan_good = chan[good_chan_ind]
+    else:
+        seeg_data_good = seeg_data
+        chan_good = chan
+
+    # hippocampus_seeg_rereference
+    for x in chan_loc_files:
+        if sub_name in x:
+            chan_locs = pd.read_csv(x, sep='\t')
+    ROI = list(chan_locs['ASEG'])
+    MNI = list(chan_locs['MNI'])
+    for i, s in enumerate(MNI):
+        x = s.strip('[]').split(',')
+        x = [float(ii) for ii in x]
+        MNI[i] = x
+    ROI_good = [R for n, R in enumerate(ROI) if n in good_chan_ind]
+    MNI_good = [R for n, R in enumerate(MNI) if n in good_chan_ind]
+
+    hippocampus_ind = [i for i, r in enumerate(ROI_good) if 'Hippocampus' in str(r)]
+    white_ind = [i for i, r in enumerate(ROI_good) if 'White' in str(r)]
+    white_locs = np.array([np.array(MNI_good[x]) for x in white_ind])
+    ref_white = []
+    for h in hippocampus_ind:
+        loc_h = np.array(MNI_good[h])
+        distant = np.sum(np.power(white_locs - loc_h, 2))
+        closet_white_ind = np.argmin(distant)
+        ref_white.append(closet_white_ind)
+    hippo_data = seeg_data_good[hippocampus_ind, :] - seeg_data_good[ref_white, :]
+
+    # rm line power noise
+    hippo_data = hamming_fir_filter(hippo_data, forder, cutoff, Fs, 'bandstop')
+    np.savez('./Result/' + file_name[-2] + '_data_preprocessed.npz', hippo_data=hippo_data, eeg_data=eeg_data)

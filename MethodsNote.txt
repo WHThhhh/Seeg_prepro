@@ -1,0 +1,20 @@
+SOs detection:
+	1.bandpass 0.16-1.25Hz, order 3, only N2\3
+	2.find all cross-0 points, 2 successive p2n for  Cz and n2p for iEEG (0.8-2s; 0.5-1.25Hz)
+	3.only top 25% amplitudes remain in SO candidates
+	4.然后tmd随机抽几段原始数据，手动验证一下
+	5.lock time to the down state(trough/peak) and epoch-2.5s to 2.5s from raw data
+
+Spindles:
+	1.bandpass 12-16Hz, order 3, only N2\3
+	2.200ms moving RMS window, 75% RMS value for amplitude threshold
+	3.find all 0.5-3s RMS signal beyond thre
+	4.然后也是tmd手动验证一下
+	5.lock time to the maximum of spindles and epoch-2.5s to 2.5s from raw data
+
+Ripples:
+	1.bandpass 80-100Hz, same
+	2.20ms moving RMS window, 99% RMS value for amplitude threshold
+	3.find all 38ms longer RMS signal beyond thre
+	4.Raw data must have 3 discrete troughs/peaks
+	5.lock time to the maximum ripple peak and epoch-1.5s to 1.5s from raw data

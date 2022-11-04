@@ -1,0 +1,8 @@
+/lustre/grp/gjhlab/lvbj/lyz_grp/Software/anaconda3/envs/WHT/lib/python3.8/site-packages/pymatreader/utils.py:122: UserWarning: Complex objects (like classes) are not supported. They are imported on a best effort base but your mileage will vary.
+  warn('Complex objects (like classes) are not supported. '
+Traceback (most recent call last):
+  File "Prepro.py", line 73, in <module>
+    Spindle_epochs = Epochs_wht(Spindle_peak, data, 1250)
+  File "Prepro.py", line 47, in Epochs_wht
+    chan_epochs.append(np.array(raw_data[i, p - time_range:p + time_range].to('cpu')))
+AttributeError: 'numpy.ndarray' object has no attribute 'to'
