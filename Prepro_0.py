@@ -95,19 +95,27 @@ for file in Files:
     MNI_good = [R for n, R in enumerate(MNI) if n in good_chan_ind]
 
     hippocampus_ind = [i for i, r in enumerate(ROI_good) if 'Hippocampus' in str(r)]
-    white_ind = [i for i, r in enumerate(ROI_good) if 'White' in str(r)]
 
     hippocampus_site_names = [chan_good[i] for i in hippocampus_ind]
-
     hippocampus_chan_names = [c[0] for c in chan_good if c[0]]
 
+    white_ind = [i for i, r in enumerate(ROI_good) if 'White' in str(r) and r[0] in hippocampus_chan_names]
     white_locs = np.array([np.array(MNI_good[x]) for x in white_ind])
+
     ref_white = []
     for h in hippocampus_ind:
         loc_h = np.array(MNI_good[h])
-        distant = np.sum(np.power(white_locs - loc_h, 2))
+        h_chan_name = chan_good[h][0]
+        distant = list(np.sum(np.power(white_locs - loc_h, 2)))
         closet_white_ind = np.argmin(distant)
-        ref_white.append(closet_white_ind)
+        while chan_good[white_ind[closet_white_ind]] != h_chan_name:
+            distant[closet_white_ind] = float('inf')
+            closet_white_ind = np.argmin(distant)
+        if distant[closet_white_ind] == float('inf'):
+            raise Exception("No white matter sites on this hippocampus channel!")
+
+        ref_white.append(white_ind[closet_white_ind])
+
     hippo_data = seeg_data_good[hippocampus_ind, :] - seeg_data_good[ref_white, :]
 
     # rm line power noise
