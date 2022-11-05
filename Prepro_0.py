@@ -97,23 +97,24 @@ for file in Files:
     hippocampus_ind = [i for i, r in enumerate(ROI_good) if 'Hippocampus' in str(r)]
 
     hippocampus_site_names = [chan_good[i] for i in hippocampus_ind]
-    hippocampus_chan_names = [c[0] for c in chan_good if c[0]]
+    hippocampus_chan_names = []
+    for c in hippocampus_site_names:
+        hippocampus_chan_names += c[0] if c[0] not in hippocampus_chan_names else []
 
-    white_ind = [i for i, r in enumerate(ROI_good) if 'White' in str(r) and r[0] in hippocampus_chan_names]
+    white_ind = [i for i, r in enumerate(ROI_good) if 'White' in str(r) and chan_good[i][0] in hippocampus_chan_names]
     white_locs = np.array([np.array(MNI_good[x]) for x in white_ind])
 
     ref_white = []
     for h in hippocampus_ind:
         loc_h = np.array(MNI_good[h])
         h_chan_name = chan_good[h][0]
-        distant = list(np.sum(np.power(white_locs - loc_h, 2)))
+        distant = list(np.sum(np.power(white_locs - loc_h, 2), axis=1))
         closet_white_ind = np.argmin(distant)
-        while chan_good[white_ind[closet_white_ind]] != h_chan_name:
+        while chan_good[white_ind[closet_white_ind]][0] != h_chan_name:
             distant[closet_white_ind] = float('inf')
             closet_white_ind = np.argmin(distant)
-        if distant[closet_white_ind] == float('inf'):
-            raise Exception("No white matter sites on this hippocampus channel!")
-
+            if distant[closet_white_ind] == float('inf'):
+                raise Exception("No white matter sites on this hippocampus channel!")
         ref_white.append(white_ind[closet_white_ind])
 
     hippo_data = seeg_data_good[hippocampus_ind, :] - seeg_data_good[ref_white, :]
