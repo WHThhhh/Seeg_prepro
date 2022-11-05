@@ -69,10 +69,9 @@ for file in Files:
 
     del Data, data
 
-    # eeg_rereference
-    mean_eeg = np.mean(eeg_data, axis=0)
-    eeg_data -= mean_eeg
+    # eeg_filter
     eeg_data = hamming_fir_filter(eeg_data, forder, [0.1, 30], Fs, 'bandpass')
+
     # remove seeg bad channels
     bad_chan_ind, good_chan_ind = detect_bad_channel(seeg_data - np.mean(seeg_data, axis=0))
     if bad_chan_ind:
@@ -97,6 +96,11 @@ for file in Files:
 
     hippocampus_ind = [i for i, r in enumerate(ROI_good) if 'Hippocampus' in str(r)]
     white_ind = [i for i, r in enumerate(ROI_good) if 'White' in str(r)]
+
+    hippocampus_site_names = [chan_good[i] for i in hippocampus_ind]
+
+    hippocampus_chan_names = [c[0] for c in chan_good if c[0]]
+
     white_locs = np.array([np.array(MNI_good[x]) for x in white_ind])
     ref_white = []
     for h in hippocampus_ind:
