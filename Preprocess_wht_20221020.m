@@ -9,9 +9,9 @@ fs = 512;
 %     end
 % end
 
+%%
 
-
-for i = 16:length(Couple_epochs)
+for i = 1:length(Couple_epochs)
     C_c = Couple_epochs{i};
     %M_C = mean(C_c,1);
 
@@ -20,9 +20,9 @@ for i = 16:length(Couple_epochs)
         temp_r = bandpass(temp,[80,100],fs);
         temp_s = bandpass(temp,[12,16],fs);
         temp_o = bandpass(temp,[0.16,1.25],fs);
-        [scalar,~,ts] = spectrogram(temp_s,10,1,20,fs);
+        [scalar,~,ts] = spectrogram(temp_r,10,1,20,fs);
         subplot(3,1,1)
-        spectrogram(temp_s,10,1,20,fs,'yaxis')
+        spectrogram(temp_r,10,1,20,fs,'yaxis')
         colorbar off
         subplot(3,1,2)
         plot(temp_s)

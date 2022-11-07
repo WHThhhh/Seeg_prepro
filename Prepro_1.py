@@ -25,6 +25,8 @@ def find_len(sig, min_len, max_len, raw_data, rms_win):
         diff_i = torch.where(sig_diff[i, :] != 0)[0]
         last_p = 0
         for p in diff_i:
+            if p < rms_win//2:
+                continue
             if sig_diff[i, p] == 1:
                 last_p = p - rms_win // 2
             elif sig_diff[i, p] == -1:
