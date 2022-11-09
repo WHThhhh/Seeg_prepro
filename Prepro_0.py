@@ -49,6 +49,27 @@ def detect_bad_channel(sig, max_bad_channels=10, max_iters=5):
     return bad_channels_ind, good_chan_ind
 
 
+def z_score_remove(sig):
+    sig_mean = np.mean(sig, axis=-1)
+    sig_std = np.std(sig, axis=-1)
+    out_min = np.expand_dims(np.array(sig_mean - 5 * sig_std), axis=1)
+    out_max = np.expand_dims(np.array(sig_mean + 5 * sig_std), axis=1)
+    sig_times = set(range(sig.shape[1]))
+    rm_range = []
+    rm_points = list(set(np.where(np.array((sig <= out_min).tolist() or (sig >= out_max).tolist()) == 1)[1]))
+    rm_range += [list(range(x - 500, x + 500)) for x in rm_points]
+    rm_range_1d = []
+    for e in rm_range:
+        rm_range_1d.extend(e)
+    return sorted(list(sig_times.difference(set(rm_range_1d))))
+
+
+def artifact_remove(hi, ee):
+    hippo_remain = z_score_remove(hi)
+    eeg_remain = z_score_remove(ee)
+    return hippo_remain, eeg_remain
+
+
 path = './data/'
 # /lustre/grp/gjhlab/lvbj/lyz_grp/wht/Three_coupling_prepro/
 # E:/BaiduNetdiskDownload/sub-songxingjiu/
@@ -71,6 +92,7 @@ for file in Files:
 
     # eeg_filter
     eeg_data = hamming_fir_filter(eeg_data, forder, [0.1, 30], Fs, 'bandpass')
+    eeg_data = scipy.signal.detrend(eeg_data, axis=-1)
 
     # remove seeg bad channels
     bad_chan_ind, good_chan_ind = detect_bad_channel(seeg_data - np.mean(seeg_data, axis=0))
@@ -121,4 +143,11 @@ for file in Files:
 
     # rm line power noise
     hippo_data = hamming_fir_filter(hippo_data, forder, cutoff, Fs, 'bandstop')
+
+    # Artifact detection
+    # hippo_data, eeg_data = artifact_remove(hippo_data, eeg_data)
+    # hippo_diff = hippo_data[:, :-1] - hippo_data[:, 1:]
+    # eeg_diff = eeg_data[:, :-1] - eeg_data[:, 1:]
+    # hippo_data, eeg_data = artifact_remove(hippo_diff, eeg_diff)
+
     np.savez('./Result/' + file_name[-2] + '_data_preprocessed.npz', hippo_data=hippo_data, eeg_data=eeg_data)

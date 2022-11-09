@@ -1,6 +1,6 @@
 clc
 clear
-load('./Result/D2Three_Couple_epochs.mat');
+load('./Result/20221104/D2Three_Couple_epochs.mat');
 fs = 512;
 % %% sEEG
 % for i =11:15
@@ -28,7 +28,7 @@ for i = 1:length(Couple_epochs)
         plot(temp_s)
         hold on
         plot(temp_r)
-        plot(temp_o.*0.2)
+        plot(temp_o)
         hold off
         subplot(3,1,3)
         plot(temp)
@@ -70,7 +70,7 @@ for p = 11:22
     
     EEG_ind = Couple_ind{p};
     for i = 1:size(EEG_ind,1)
-        s_1 = EEG_ind(i,2);
+        s_1 = EEG_ind(i,1);
         for k = 1:10
             s_all_2 = Couple_ind{k}(:,2) - s_1;
             if abs(min(s_all_2)) <= 750

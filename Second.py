@@ -18,6 +18,8 @@ All_files = glob.glob(path + '/*.npz')
 sub_file_list = [[file for file in All_files if 'D2' in file], [file for file in All_files if 'D3' in file]]
 
 for sub in sub_file_list:
+    if not sub:
+        continue
     sub_name = sub[0].split('_')[-3][-2:]
     Raw_data = np.load([file for file in sub if 'data' in file][0])
     eeg_data = Raw_data['eeg_data'].astype(np.float32)
@@ -41,7 +43,7 @@ for sub in sub_file_list:
         R, S, O = hippo_Ripple_ind[i], hippo_Spindle_ind[i], hippo_SO_ind[i]
         Couple_chan = []
         Couple_ep_chan = []
-        EEG_couple_chan = []
+        # EEG_couple_chan = []
         for ii, r in enumerate(R):
             closest_S = min(S, key=lambda x: abs(x - r))
             closest_O = min(O, key=lambda x: abs(x - r))
@@ -50,8 +52,8 @@ for sub in sub_file_list:
                 o = O.index(closest_O)
                 Couple_chan.append([closest_O, closest_S, r])
                 Couple_ep_chan.append(hippo_Ripple_epochs[i][ii])
-                EEG_couple_chan.append(eeg_data[:, r - 750:r + 750])
-        EEG_couple_l.append(EEG_couple_chan)
+                # EEG_couple_chan.append(eeg_data[:, r - 750:r + 750])
+        # EEG_couple_l.append(EEG_couple_chan)
         Couple_l.append(Couple_chan)
         Couple_epochs.append(Couple_ep_chan)
 
